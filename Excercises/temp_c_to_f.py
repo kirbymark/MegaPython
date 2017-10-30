@@ -6,7 +6,6 @@ def temp_c_to_f(celsius):
         return fahrenheit
 
 
-print(temp_c_to_f(10))
-print(temp_c_to_f(-10))
-print(temp_c_to_f(-273))
-print(temp_c_to_f(-274))
+ctemps=[10,-20,-289,100]
+for t in ctemps:
+    print(temp_c_to_f(t))
