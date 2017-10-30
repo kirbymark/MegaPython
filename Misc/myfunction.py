@@ -3,5 +3,4 @@ def minutes_to_hours(minutes, seconds=0):
         return hours
 
 
-
-print(minutes_to_hours(60,20))
+print(minutes_to_hours(60, 20))
