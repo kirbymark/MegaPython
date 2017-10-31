@@ -34,17 +34,37 @@ elif environment == "PROD":
     api_url_base = 'https://api.gdax.com'
     auth = GDAXRequestAuth(api_config.api_key_prod, api_config.api_secret_prod, api_config.passphrase_prod)
 
+#Get Prices
+myurl = api_url_base + '/products/ETH-USD/ticker'
+response = requests.get(myurl)
+ETH_PRICE = response.json()["price"]
+print("Ether Price --> " + ETH_PRICE)
 
-#list of Products
-#myurl = api_url_base + '/products'
-#response = requests.get(myurl)
-#print(response.json())
+myurl = api_url_base + '/products/BTC-USD/ticker'
+response = requests.get(myurl)
+BTC_PRICE = response.json()["price"]
+print("BitCoin Price --> " + BTC_PRICE)
 
 
 # Account Details
 myurl = api_url_base + '/accounts'
 response = requests.get(myurl, auth=auth)
-print(response.json())
+
+TotalAcctValue=0.0
+
+for account in response.json():
+    #print(account)
+    if float(account["balance"]) > 0.0 and account["currency"]=="ETH":
+        print(account["currency"]+" "+account["balance"]+"  Value:"+ str(float(account["balance"])*float(ETH_PRICE)))
+        TotalAcctValue=TotalAcctValue+(float(account["balance"])*float(ETH_PRICE))
+    elif float(account["balance"]) > 0.0 and account["currency"]=="BTC":
+        print(account["currency"]+" "+account["balance"]+"  Value:"+ str(float(account["balance"])*float(BTC_PRICE)))
+        TotalAcctValue=TotalAcctValue+(float(account["balance"])*float(BTC_PRICE))
+    elif float(account["balance"]) > 0.0:
+        print(account["currency"]+" "+account["balance"])
+        TotalAcctValue=TotalAcctValue+(float(account["balance"]))
+
+print(TotalAcctValue)
 
 # An order
 #order_url = api_url_base + '/orders'
