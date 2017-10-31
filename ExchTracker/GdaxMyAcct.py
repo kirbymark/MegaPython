@@ -61,7 +61,7 @@ for account in response.json():
         print(account["currency"]+" "+account["balance"]+"  Value:"+ str(float(account["balance"])*float(BTC_PRICE)))
         TotalAcctValue=TotalAcctValue+(float(account["balance"])*float(BTC_PRICE))
     elif float(account["balance"]) > 0.0:
-        print(account["currency"]+" "+account["balance"])
+        print(account["currency"]+" "+account["balance"]+"  Value:"+ str(float(account["balance"])))
         TotalAcctValue=TotalAcctValue+(float(account["balance"]))
 
 print(TotalAcctValue)
