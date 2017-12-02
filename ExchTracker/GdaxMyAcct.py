@@ -1,4 +1,7 @@
 import gdax
+import pendulum
+import os.path
+import csv
 import json, hmac, hashlib, time, requests, base64
 from requests.auth import AuthBase
 import api_config
@@ -34,6 +37,21 @@ elif environment == "PROD":
     api_url_base = 'https://api.gdax.com'
     auth = GDAXRequestAuth(api_config.api_key_prod, api_config.api_secret_prod, api_config.passphrase_prod)
 
+#OutputFlie info
+now=pendulum.now()
+pendulum.set_formatter('alternative')
+OutputFile="GdaxAcctHistory.csv"
+file_exists = os.path.isfile(OutputFile)
+
+OutputData = {"Time":"","ETH_Price": "","ETH": "", "ETH_Val": "", "BTC_Price": "", "BTC": "", "BTC_Val": "", "USD_Val": "", "Total": ""}
+
+with open(OutputFile, 'a+') as f:
+    w = csv.writer(f,delimiter=',')
+    if not file_exists:
+        w.writerow(OutputData.keys())
+
+OutputData["Time"] = str(now.format('YYYY-MM-DD-HHmmss'))
+
 #Get Prices
 myurl = api_url_base + '/products/ETH-USD/ticker'
 response = requests.get(myurl)
@@ -46,6 +64,10 @@ BTC_PRICE = response.json()["price"]
 print("BitCoin Price --> " + BTC_PRICE)
 
 
+OutputData["ETH_Price"] = float(ETH_PRICE)
+OutputData["BTC_Price"] = float(BTC_PRICE)
+
+
 # Account Details
 myurl = api_url_base + '/accounts'
 response = requests.get(myurl, auth=auth)
@@ -56,15 +78,29 @@ for account in response.json():
     #print(account)
     if float(account["balance"]) > 0.0 and account["currency"]=="ETH":
         print(account["currency"]+" "+account["balance"]+"  Value:"+ str(float(account["balance"])*float(ETH_PRICE)))
+        OutputData["ETH"] = float(account["balance"])
+        OutputData["ETH_Val"] = float(account["balance"]) * float(ETH_PRICE)
         TotalAcctValue=TotalAcctValue+(float(account["balance"])*float(ETH_PRICE))
     elif float(account["balance"]) > 0.0 and account["currency"]=="BTC":
         print(account["currency"]+" "+account["balance"]+"  Value:"+ str(float(account["balance"])*float(BTC_PRICE)))
+        OutputData["BTC"] = float(account["balance"])
+        OutputData["BTC_Val"] = float(account["balance"])*float(BTC_PRICE)
         TotalAcctValue=TotalAcctValue+(float(account["balance"])*float(BTC_PRICE))
     elif float(account["balance"]) > 0.0:
         print(account["currency"]+" "+account["balance"]+"  Value:"+ str(float(account["balance"])))
+        OutputData["USD_Val"] = float(account["balance"])
         TotalAcctValue=TotalAcctValue+(float(account["balance"]))
 
+OutputData["Total"] = TotalAcctValue
+
 print(TotalAcctValue)
+
+#print(OutputData)
+
+with open(OutputFile, 'a+') as f:
+    w = csv.writer(f,delimiter=',')
+    w.writerow(OutputData.values())
+
 
 # An order
 #order_url = api_url_base + '/orders'
