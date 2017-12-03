@@ -29,6 +29,7 @@ class GDAXRequestAuth(AuthBase):
         return request
 
 environment="PROD"
+Invested = 1300.0
 
 if environment == "SANDBOX":
     api_url_base = 'https://api-public.sandbox.gdax.com'
@@ -43,7 +44,7 @@ pendulum.set_formatter('alternative')
 OutputFile="GdaxAcctHistory.csv"
 file_exists = os.path.isfile(OutputFile)
 
-OutputData = {"Time":"","ETH_Price": "","ETH": "", "ETH_Val": "", "BTC_Price": "", "BTC": "", "BTC_Val": "", "USD_Val": "", "Total": ""}
+OutputData = {"Time":"","ETH_Price": "","ETH": "", "ETH_Val": "", "BTC_Price": "", "BTC": "", "BTC_Val": "", "USD_Val": "", "Total": "","Gain": ""}
 
 with open(OutputFile, 'a+') as f:
     w = csv.writer(f,delimiter=',')
@@ -77,23 +78,24 @@ TotalAcctValue=0.0
 for account in response.json():
     #print(account)
     if float(account["balance"]) > 0.0 and account["currency"]=="ETH":
-        print(account["currency"]+" "+account["balance"]+"  Value:"+ str(float(account["balance"])*float(ETH_PRICE)))
         OutputData["ETH"] = float(account["balance"])
         OutputData["ETH_Val"] = float(account["balance"]) * float(ETH_PRICE)
-        TotalAcctValue=TotalAcctValue+(float(account["balance"])*float(ETH_PRICE))
+        TotalAcctValue=TotalAcctValue + OutputData["ETH_Val"]
+        print(account["currency"]+" " + str(OutputData["ETH"]) + "  Value:"+ str(OutputData["ETH_Val"]))
     elif float(account["balance"]) > 0.0 and account["currency"]=="BTC":
         print(account["currency"]+" "+account["balance"]+"  Value:"+ str(float(account["balance"])*float(BTC_PRICE)))
         OutputData["BTC"] = float(account["balance"])
         OutputData["BTC_Val"] = float(account["balance"])*float(BTC_PRICE)
-        TotalAcctValue=TotalAcctValue+(float(account["balance"])*float(BTC_PRICE))
+        TotalAcctValue=TotalAcctValue + OutputData["BTC_Val"]
     elif float(account["balance"]) > 0.0:
         print(account["currency"]+" "+account["balance"]+"  Value:"+ str(float(account["balance"])))
         OutputData["USD_Val"] = float(account["balance"])
-        TotalAcctValue=TotalAcctValue+(float(account["balance"]))
+        TotalAcctValue=TotalAcctValue + OutputData["USD_Val"]
 
 OutputData["Total"] = TotalAcctValue
+OutputData["Gain"] = float(TotalAcctValue) - Invested
 
-print(TotalAcctValue)
+print("Total: " + str(OutputData["Total"]) + "   Gain: " + str(OutputData["Gain"]) + "     Return:" + str(round(OutputData["Gain"]/OutputData["Total"]*100,2)))
 
 #print(OutputData)
 
