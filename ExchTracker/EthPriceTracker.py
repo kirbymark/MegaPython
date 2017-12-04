@@ -1,16 +1,23 @@
 from GDAXRequestAuth import *
 import time
-import datetime
-import collections
+# import datetime
+# import collections
 import numpy as np
 import pandas as pd
-import talib
+from datetime import datetime, timedelta
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+from matplotlib import style
+from matplotlib.dates import DayLocator, HourLocator, MinuteLocator, DateFormatter, drange
+# import talib
 
 tz = pendulum.timezone('America/New_York')
 public_client = gdax.PublicClient()
 
-def addData(currdata,newdata):
-    mydict=dict()
+
+# The addData function appends new price data to an array of price history
+def addData(currdata, newdata):
+    mydict = dict()
     for i in reversed(newdata):
         #print("searching for: "+str(pendulum.from_timestamp(i[0])))
         if not any(d["Time"] == str(pendulum.from_timestamp(i[0])) for d in currdata):
@@ -21,11 +28,6 @@ def addData(currdata,newdata):
             mydict["Close"] = i[4]
             mydict["Volume"] = i[5]
             currdata.append(mydict.copy())
-
-
-        #mylist.append(price)
-        #new_list=deque(mylist,30)
-        #print("New: " + str(list(new_list)))
     return currdata
 
 def SMA(values, window):
@@ -41,63 +43,100 @@ def EMA(values, window):
     EMA=ema.values[-1].tolist()[0]
     return EMA
 
-#Alternate version of EMA
-#def TEMA(values, window):
-    #print("Infunction")
-    #ema_result=talib.EMA(np.asarray(values), timeperiod=window)
-    #print(ema_result)
-    #return float(ema_result[-1])
+def GetTradeData(timewindow):
+    Currtime = pendulum.now()
+
+    StartTime = Currtime.subtract(seconds=timewindow)
+    EndTime = Currtime
+    print("Getting history from " + str(StartTime) + " to " + str(Currtime))
+
+    #Get Candle data
+    myurl = api_url_base + '/products/ETH-USD/candles?start=' + StartTime.isoformat() + "&end=" + EndTime.isoformat() + "&granularity=" + str(granularity)
+    print(myurl)
+    response = requests.get(myurl)
+    try:
+        return response.json()
+    except json.decoder.JSONDecodeError:
+        print("Decoding JSON has failed")
+        return none
+
+def plotData(Dataset):
+    Close_price=[item['Close'] for item in deque(Dataset)]
+    Open_price=[item['Open'] for item in deque(Dataset)]
+    #Convert the ISO string to datetime and adjust for current timezone
+    Time_stmp=[(datetime.strptime(item['Time'], '%Y-%m-%dT%H:%M:%S+00:00')- timedelta(hours=5)) for item in deque(Dataset)]
+    dataSeries1 = pd.Series(Close_price, index=Time_stmp)
+    dataSeries2 = pd.Series(Open_price, index=Time_stmp)
+    style.use("ggplot")
+    figure = plt.figure(figsize=(10,7), dpi=100)
+
+    #figure.autofmt_xdate(bottom=0.2, rotation=90, ha='right', which=None)
+    myplot = figure.add_subplot(111)
+    myplot.set(title='Price History', xlabel='Time', ylabel='Price')
+
+    #plt.set_title("PriceHistory")
+    dataSeries1.plot(ax=myplot, style='v-', label='close')
+    dataSeries2.plot(ax=myplot, style='o', label='open')
+    myplot.legend(loc='upper left')
+
+    #ax.xaxis.set_minor_locator(HourLocator)
+    myplot.xaxis.grid(True, which="minor")
+    plt.show()
+
+
 
 counter = 0
-gran = 300
-profit_step=0.5
-stop_ratio=0.1
-StoreData = {"Type":"","Time": "", "HistDepth": "", "Price": "", "EMA_12": "", "EMA_26": ""}
-OutData = {"Time": "", "HistDepth": "", "Price": "", "EMA_12": "", "EMA_26": ""}
+granularity = 100  # min intervals
 PriceHist = deque(maxlen=500)
 PriceHist.clear()
 EMA_12=0.0
 EMA_26=0.0
 
+#StoreFile name and format info
+StoreFile=".\output\EthPriceTrack.txt"
+StoreData = {"Type":"","Time": "", "HistDepth": "", "Price": "", "EMA_12": "", "EMA_26": ""}
 
-#StoreFlie info
+#OutputFlie name and format info
 now=pendulum.now()
 pendulum.set_formatter('alternative')
-StoreFile="EthPriceTrack.txt"
+OutFile=".\output\TrackerRun-" + now.format('YYYY-MM-DD-HHmmss') + ".csv"
+OutData = {"Time": "", "HistDepth": "", "Price": "", "EMA_12": "", "EMA_26": ""}
 
-#OutputFlie info
-now=pendulum.now()
-pendulum.set_formatter('alternative')
-OutFile="TrackerRun-" + now.format('YYYY-MM-DD-HHmmss') + ".csv"
+print("stating...")
+addData(PriceHist,GetTradeData(granularity*40))
+plotData(PriceHist)
+quit()
 
+#ani = animation.FuncAnimation(fig,animate,interval=1000)
+#plt.show()
 
+#viz.xaxis.set_major_locator(DayLocator())
+#viz.xaxis.set_major_formatter(DateFormatter('%Y-%m-%d'))
+#viz.xaxis.set_minor_locator(MinuteLocator())
+#ax.xaxis.set_major_formatter(DateFormatter("%H:%M"))
+#ax.xaxis.set_minor_locator(MinuteLocator())
 
-print("Running ... yes ....")
+#viz.set_xticks(dataSeries.index)
+#viz.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))
+
 
 while True:
-    Currtime = pendulum.now()
-    #print("Localtime: " + str(Currtime))
-    #print("In UTC time: " + str(Currtime.in_timezone('Europe/London').isoformat()))
-    #print(Currtime.isoformat())
+    ResponseData = GetTradeData(granularity*3)
+    print("Length of Response Data: " + str(len(ResponseData)))
+    addData(PriceHist,ResponseData)
+    print("Length of PriceHist: " + str(len(PriceHist)))
 
-    StartTime = Currtime.subtract(seconds=gran*4)
-    EndTime = Currtime
+    Close_price=[item['Close'] for item in deque(PriceHist)]
+    #Convert the ISO string to datetime and adjust for current timezone
+    Time_stmp=[(datetime.strptime(item['Time'], '%Y-%m-%dT%H:%M:%S+00:00')- timedelta(hours=5)) for item in deque(PriceHist)]
+
+    #ani=animation.FuncAnimation(viz,animate,interval=1000)
+    #plt.show()
 
     #Get ETH Price
     myurl = api_url_base + '/products/ETH-USD/ticker'
     response = requests.get(myurl)
     ETH_PRICE = float(response.json()["price"])
-
-    #Get Candle data
-    myurl = api_url_base + '/products/ETH-USD/candles?start=' + StartTime.isoformat() + "&end=" + EndTime.isoformat() + "&granularity=" + str(gran)
-    response = requests.get(myurl)
-    try:
-        ResponseData=response.json()
-    except json.decoder.JSONDecodeError:
-        print("Decoding JSON has failed")
-
-
-    addData(PriceHist,ResponseData)
 
     #simple Moving Average
     SMA_12 = SMA([item['Close'] for item in deque(PriceHist,maxlen=12)],len(deque(PriceHist,maxlen=12)))
@@ -121,7 +160,7 @@ while True:
     currentdata = PriceHist[-1]
 
     StoreData["Type"] = "Pandas"
-    StoreData["Time"] = Currtime
+    StoreData["Time"] = pendulum.now()
     StoreData["HistDepth"] = len(PriceHist)
     StoreData["Price"] = round(ETH_PRICE,3)
     #OutputData["Close"] = currentdata["Close"]
@@ -136,7 +175,7 @@ while True:
         w.writerow(StoreData.values())
 
 
-    OutData["Time"] = Currtime
+    OutData["Time"] = pendulum.now()
     OutData["HistDepth"] = len(PriceHist)
     OutData["Price"] = round(ETH_PRICE,3)
     OutData["EMA_12"] = round(EMA_12,3)
