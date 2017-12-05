@@ -48,11 +48,11 @@ def GetTradeData(timewindow):
 
     StartTime = Currtime.subtract(seconds=timewindow)
     EndTime = Currtime
-    print("Getting history from " + str(StartTime) + " to " + str(Currtime))
+    #print("Getting history from " + str(StartTime) + " to " + str(Currtime))
 
     #Get Candle data
     myurl = api_url_base + '/products/ETH-USD/candles?start=' + StartTime.isoformat() + "&end=" + EndTime.isoformat() + "&granularity=" + str(granularity)
-    print(myurl)
+    #print(myurl)
     response = requests.get(myurl)
     try:
         return response.json()
@@ -67,26 +67,21 @@ def plotData(Dataset):
     Time_stmp=[(datetime.strptime(item['Time'], '%Y-%m-%dT%H:%M:%S+00:00')- timedelta(hours=5)) for item in deque(Dataset)]
     dataSeries1 = pd.Series(Close_price, index=Time_stmp)
     dataSeries2 = pd.Series(Open_price, index=Time_stmp)
-    style.use("ggplot")
-    figure = plt.figure(figsize=(10,7), dpi=100)
-
-    #figure.autofmt_xdate(bottom=0.2, rotation=90, ha='right', which=None)
-    myplot = figure.add_subplot(111)
-    myplot.set(title='Price History', xlabel='Time', ylabel='Price')
-
-    #plt.set_title("PriceHistory")
     dataSeries1.plot(ax=myplot, style='v-', label='close')
     dataSeries2.plot(ax=myplot, style='o', label='open')
+    myplot.grid(color='#a6a6a6', linestyle='--', linewidth=1)
     myplot.legend(loc='upper left')
+    figure.canvas.draw()
 
     #ax.xaxis.set_minor_locator(HourLocator)
     myplot.xaxis.grid(True, which="minor")
-    plt.show()
+
+    #plt.show()
 
 
 
 counter = 0
-granularity = 100  # min intervals
+granularity = 5  # min intervals
 PriceHist = deque(maxlen=500)
 PriceHist.clear()
 EMA_12=0.0
@@ -102,10 +97,24 @@ pendulum.set_formatter('alternative')
 OutFile=".\output\TrackerRun-" + now.format('YYYY-MM-DD-HHmmss') + ".csv"
 OutData = {"Time": "", "HistDepth": "", "Price": "", "EMA_12": "", "EMA_26": ""}
 
+#plt.ion()
+#figure = plt.figure(figsize=(10,7), dpi=100)
+figure=plt.gcf()
+figure=plt.figure(figsize=(12,10), dpi=100)
+figure.show()
+figure.canvas.draw()
+myplot = figure.add_subplot(111)
+myplot.set(title='Price History', xlabel='Time', ylabel='Price')
+style.use("ggplot")
+
+
 print("stating...")
-addData(PriceHist,GetTradeData(granularity*40))
+addData(PriceHist,GetTradeData(granularity*80))
 plotData(PriceHist)
-quit()
+#plt.draw()
+#plt.pause(1)
+#plt.show(block=True)
+#quit()
 
 #ani = animation.FuncAnimation(fig,animate,interval=1000)
 #plt.show()
@@ -121,17 +130,9 @@ quit()
 
 
 while True:
-    ResponseData = GetTradeData(granularity*3)
-    print("Length of Response Data: " + str(len(ResponseData)))
-    addData(PriceHist,ResponseData)
-    print("Length of PriceHist: " + str(len(PriceHist)))
-
-    Close_price=[item['Close'] for item in deque(PriceHist)]
-    #Convert the ISO string to datetime and adjust for current timezone
-    Time_stmp=[(datetime.strptime(item['Time'], '%Y-%m-%dT%H:%M:%S+00:00')- timedelta(hours=5)) for item in deque(PriceHist)]
-
-    #ani=animation.FuncAnimation(viz,animate,interval=1000)
-    #plt.show()
+    addData(PriceHist,GetTradeData(granularity*4))
+    print("Depth of PriceHist: " + str(len(PriceHist)))
+    plotData(PriceHist)
 
     #Get ETH Price
     myurl = api_url_base + '/products/ETH-USD/ticker'
@@ -188,5 +189,6 @@ while True:
         w = csv.writer(f,delimiter=',')
         w.writerow(OutData.values())
 
-
-    time.sleep(200)
+    print("waiting...")
+    time.sleep(5)
+    plt.clf()
