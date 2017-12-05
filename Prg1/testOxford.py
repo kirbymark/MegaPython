@@ -3,6 +3,7 @@ import json
 import requests
 from jsonpath_ng import jsonpath
 from jsonpath_ng.ext import parse
+from collections import defaultdict
 
 def getDictdata(word_id,language):
     OxfordHeaders = {"app_id": api_config.oxfordDict_app_id, "app_key": api_config.oxfordDict_app_key}
@@ -20,15 +21,45 @@ def getDictdata(word_id,language):
         print ("API Response Text: " + str(response.text))
         return None
 
+def ListEntries(source,expression):
+    jsonpath_expr = parse(expression)
+    print("searching for: " + expression)
+    result = []
+    for match in jsonpath_expr.find(source):
+        result.append(match.value)
+    return result
+
+
 lookupword="ace"
 
 response = getDictdata(lookupword,'en')
 responsePy = response.json()
 
-
 '''
 Trying  jsonpath
 '''
+wordtypes = ListEntries(responsePy,'results[*]..lexicalCategory')
+
+defs = defaultdict(list)
+
+for wtype in wordtypes:
+    items = ListEntries(responsePy,'results[*]..lexicalEntries[?(@.lexicalCategory=="' + wtype + '")]..definitions[*]')
+    defs[wtype] = items
+
+print(defs)
+print(type(defs))
+
+print("-----------------------------------------")
+print("Definition of : " +  lookupword)
+print("-----------------------------------------")
+for i in defs.keys():
+    print ("    " + str(i))
+    for j in defs[i]:
+        print ("       - " + str(j))
+
+
+quit()
+
 #jsonpath_expr = parse('entries[*].senses[*].definitions')
 jsonpath_expr = parse('results[*]..lexicalEntries[?(@.lexicalCategory=="Noun")]..definitions[*]')
 
