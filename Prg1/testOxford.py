@@ -8,6 +8,24 @@ from collections import defaultdict
 def getDictdata(word_id,language):
     OxfordHeaders = {"app_id": api_config.oxfordDict_app_id, "app_key": api_config.oxfordDict_app_key}
     url = api_config.oxfordURL +'/entries/' + language + '/' + word_id.lower() + '/regions%3Dus%3Bdefinitions%3Bexamples'
+    #print("Calling: " + url)
+
+    response = requests.get(url, headers = OxfordHeaders)
+
+    if response.status_code == 200:
+        #print("Success")
+        return response
+    elif response.status_code == 404:
+        return "Not Found"
+    else:
+        print("Error calling the OxfordAPI")
+        print ("API Response Code: " + str(response.status_code))
+        print ("API Response Text: " + str(response.text))
+        return None
+
+def searchDictdata(word_id,language):
+    OxfordHeaders = {"app_id": api_config.oxfordDict_app_id, "app_key": api_config.oxfordDict_app_key}
+    url = api_config.oxfordURL +'/search/' + language + '?q=' + word_id.lower() + '&prefix=false'
     print("Calling: " + url)
 
     response = requests.get(url, headers = OxfordHeaders)
@@ -23,9 +41,10 @@ def getDictdata(word_id,language):
         print ("API Response Text: " + str(response.text))
         return None
 
+
 def ListEntries(source,expression):
     jsonpath_expr = parse(expression)
-    print("searching for: " + expression)
+    #print("searching for: " + expression)
     result = []
     for match in jsonpath_expr.find(source):
         result.append(match.value)
@@ -37,9 +56,11 @@ lookupword=input("Please enter a word to lookup: ")
 response = getDictdata(lookupword,'en')
 if isinstance(response, str):
     print(response)
-else:
-    responsePy = response.json()
 
+else:
+    print("text \n" + response.text)
+    responsePy = response.json()
+    
     '''
     Trying  jsonpath
     '''
