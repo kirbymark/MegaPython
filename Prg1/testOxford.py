@@ -8,12 +8,12 @@ from collections import defaultdict
 def getDictdata(word_id,language):
     OxfordHeaders = {"app_id": api_config.oxfordDict_app_id, "app_key": api_config.oxfordDict_app_key}
     url = api_config.oxfordURL +'/entries/' + language + '/' + word_id.lower() + '/regions%3Dus%3Bdefinitions%3Bexamples'
-    print("Calling: " + url)
+    #print("Calling: " + url)
 
     response = requests.get(url, headers = OxfordHeaders)
 
     if response.status_code == 200:
-        print("Success")
+        #print("Success")
         return response
     else:
         print("Error calling the OxfordAPI")
@@ -23,14 +23,15 @@ def getDictdata(word_id,language):
 
 def ListEntries(source,expression):
     jsonpath_expr = parse(expression)
-    print("searching for: " + expression)
+    #print("searching for: " + expression)
     result = []
     for match in jsonpath_expr.find(source):
         result.append(match.value)
     return result
 
-
-lookupword="ace"
+print("Welcome to my word lookup program")
+print("---------------------------------")
+lookupword=input("Please enter a word to lookup: ")
 
 response = getDictdata(lookupword,'en')
 responsePy = response.json()
@@ -46,11 +47,11 @@ for wtype in wordtypes:
     items = ListEntries(responsePy,'results[*]..lexicalEntries[?(@.lexicalCategory=="' + wtype + '")]..definitions[*]')
     defs[wtype] = items
 
-print(defs)
-print(type(defs))
+#print(defs)
+#print(type(defs))
 
-print("-----------------------------------------")
-print("Definition of : " +  lookupword)
+print("\n")
+print("The definition of " + lookupword + " is as follows:")
 print("-----------------------------------------")
 for i in defs.keys():
     print ("    " + str(i))
