@@ -16,7 +16,7 @@ def getDictdata(word_id,language):
         #print("Success")
         return response
     elif response.status_code == 404:
-        return "The word does not exist"
+        return "The word does not exist. Please double check it."
     else:
         print("Error calling the OxfordAPI")
         print ("API Response Code: " + str(response.status_code))
@@ -34,6 +34,7 @@ def ListEntries(source,expression):
 print("Welcome to my word lookup program")
 print("---------------------------------")
 lookupword=input("Please enter a word to lookup: ")
+lookupword=lookupword.lower()
 
 response = getDictdata(lookupword,'en')
 if isinstance(response, str):
