@@ -16,7 +16,7 @@ def getDictdata(word_id,language):
         #print("Success")
         return response
     elif response.status_code == 404:
-        return "Not Found"
+        return "Word not Found"
     else:
         print("Error calling the OxfordAPI")
         print ("API Response Code: " + str(response.status_code))
@@ -26,7 +26,7 @@ def getDictdata(word_id,language):
 def searchDictdata(word_id,language):
     OxfordHeaders = {"app_id": api_config.oxfordDict_app_id, "app_key": api_config.oxfordDict_app_key}
     url = api_config.oxfordURL +'/search/' + language + '?q=' + word_id.lower() + '&prefix=false'
-    print("Calling: " + url)
+    #print("Calling: " + url)
 
     response = requests.get(url, headers = OxfordHeaders)
 
@@ -34,7 +34,7 @@ def searchDictdata(word_id,language):
         #print("Success")
         return response
     elif response.status_code == 404:
-        return "Not Found"
+        return "Word not Found"
     else:
         print("Error calling the OxfordAPI")
         print ("API Response Code: " + str(response.status_code))
@@ -56,11 +56,22 @@ lookupword=input("Please enter a word to lookup: ")
 response = getDictdata(lookupword,'en')
 if isinstance(response, str):
     print(response)
+    r2 = searchDictdata(lookupword,'en')
+    #print("text \n" + r2.text)
+    possWords = ListEntries(r2.json(),'results[?(@.matchType=="fuzzy")]..word')
 
+    #jsonpath_expr = parse('results[*]..lexicalEntries[?(@.lexicalCategory=="Verb")]..definitions[*]')
+
+    if len(possWords) > 0:
+        print("Did you mean one of the following? ")
+        for i in possWords:
+            print ("    " + str(i))
+    print("Please check the word and try again.")
 else:
-    print("text \n" + response.text)
+    #print("text \n" + response.text)
     responsePy = response.json()
-    
+
+
     '''
     Trying  jsonpath
     '''
@@ -72,8 +83,8 @@ else:
         items = ListEntries(responsePy,'results[*]..lexicalEntries[?(@.lexicalCategory=="' + wtype + '")]..definitions[*]')
         defs[wtype] = items
 
-    print(defs)
-    print(type(defs))
+    #print(defs)
+    #print(type(defs))
 
     print("-----------------------------------------")
     print("Definition of : " +  lookupword)
