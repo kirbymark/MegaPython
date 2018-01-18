@@ -15,6 +15,8 @@ def getDictdata(word_id,language):
     if response.status_code == 200:
         #print("Success")
         return response
+    elif response.status_code == 404:
+        return "The word does not exist"
     else:
         print("Error calling the OxfordAPI")
         print ("API Response Code: " + str(response.status_code))
@@ -34,56 +36,58 @@ print("---------------------------------")
 lookupword=input("Please enter a word to lookup: ")
 
 response = getDictdata(lookupword,'en')
-responsePy = response.json()
+if isinstance(response, str):
+    print(response)
+else:
+    responsePy = response.json()
+    '''
+    Trying  jsonpath
+    '''
+    wordtypes = ListEntries(responsePy,'results[*]..lexicalCategory')
 
-'''
-Trying  jsonpath
-'''
-wordtypes = ListEntries(responsePy,'results[*]..lexicalCategory')
+    defs = defaultdict(list)
 
-defs = defaultdict(list)
+    for wtype in wordtypes:
+        items = ListEntries(responsePy,'results[*]..lexicalEntries[?(@.lexicalCategory=="' + wtype + '")]..definitions[*]')
+        defs[wtype] = items
 
-for wtype in wordtypes:
-    items = ListEntries(responsePy,'results[*]..lexicalEntries[?(@.lexicalCategory=="' + wtype + '")]..definitions[*]')
-    defs[wtype] = items
+        #print(defs)
+        #print(type(defs))
 
-#print(defs)
-#print(type(defs))
-
-print("\n")
-print("The definition of " + lookupword + " is as follows:")
-print("-----------------------------------------")
-for i in defs.keys():
-    print ("    " + str(i))
-    for j in defs[i]:
-        print ("       - " + str(j))
-
-
-quit()
-
-#jsonpath_expr = parse('entries[*].senses[*].definitions')
-jsonpath_expr = parse('results[*]..lexicalEntries[?(@.lexicalCategory=="Noun")]..definitions[*]')
-
-print("----------------------------")
-print( lookupword + " (Noun)")
-print("----------------------------")
-for match in jsonpath_expr.find(responsePy):
-    #print(match.full_path)
-    print("- " + match.value)
-
-#jsonpath_expr = parse('entries[*].senses[*].definitions')
-jsonpath_expr = parse('results[*]..lexicalEntries[?(@.lexicalCategory=="Verb")]..definitions[*]')
-
-print("----------------------------")
-print( lookupword + " (Verb)")
-print("----------------------------")
-for match in jsonpath_expr.find(responsePy):
-    #print(match.full_path)
-    print("- " + match.value)
+        print("\n")
+        print("The definition of " + lookupword + " is as follows:")
+        print("-----------------------------------------")
+        for i in defs.keys():
+            print ("    " + str(i))
+            for j in defs[i]:
+                print ("       - " + str(j))
 
 
-#jsonpath_expr = parse('entries[*].senses[*].definitions')
-#jsonpath_expr = parse('$..results[*]..lexicalEntries[?(@.lexicalCategory=="Verb")]..definitions[*] + " | Examples :" + $..results[*]..lexicalEntries[?(@.lexicalCategory=="Verb")]..senses..examples[*].text')
-#jsonpath_expr = parse('$..results[*]..lexicalEntries[?(@.lexicalCategory=="Verb")]..senses..examples[*].text')
-#jsonpath_expr = parse('$..results[*]..lexicalEntries[?(@.lexicalCategory=="Verb")]..definitions[*] + " aa " + $..results[*]..lexicalEntries[?(@.lexicalCategory=="Verb")]..senses..examples[*].text[*]')
-#jsonpath_expr = parse('$..results[*]..lexicalEntries[?(@.lexicalCategory=="Verb")]..definitions[*] + " ex: " + $..results[*]..lexicalEntries[?(@.lexicalCategory=="Verb")]..definitions[*]..examples[*].text')
+        quit()
+
+        #jsonpath_expr = parse('entries[*].senses[*].definitions')
+        jsonpath_expr = parse('results[*]..lexicalEntries[?(@.lexicalCategory=="Noun")]..definitions[*]')
+
+        print("----------------------------")
+        print( lookupword + " (Noun)")
+        print("----------------------------")
+        for match in jsonpath_expr.find(responsePy):
+            #print(match.full_path)
+            print("- " + match.value)
+
+            #jsonpath_expr = parse('entries[*].senses[*].definitions')
+            jsonpath_expr = parse('results[*]..lexicalEntries[?(@.lexicalCategory=="Verb")]..definitions[*]')
+
+            print("----------------------------")
+            print( lookupword + " (Verb)")
+            print("----------------------------")
+            for match in jsonpath_expr.find(responsePy):
+                #print(match.full_path)
+                print("- " + match.value)
+
+
+                #jsonpath_expr = parse('entries[*].senses[*].definitions')
+                #jsonpath_expr = parse('$..results[*]..lexicalEntries[?(@.lexicalCategory=="Verb")]..definitions[*] + " | Examples :" + $..results[*]..lexicalEntries[?(@.lexicalCategory=="Verb")]..senses..examples[*].text')
+                #jsonpath_expr = parse('$..results[*]..lexicalEntries[?(@.lexicalCategory=="Verb")]..senses..examples[*].text')
+                #jsonpath_expr = parse('$..results[*]..lexicalEntries[?(@.lexicalCategory=="Verb")]..definitions[*] + " aa " + $..results[*]..lexicalEntries[?(@.lexicalCategory=="Verb")]..senses..examples[*].text[*]')
+                #jsonpath_expr = parse('$..results[*]..lexicalEntries[?(@.lexicalCategory=="Verb")]..definitions[*] + " ex: " + $..results[*]..lexicalEntries[?(@.lexicalCategory=="Verb")]..definitions[*]..examples[*].text')
