@@ -29,7 +29,7 @@ class GDAXRequestAuth(AuthBase):
         return request
 
 environment="PROD"
-Invested = 1300.0
+Invested = 3800.0
 
 if environment == "SANDBOX":
     api_url_base = 'https://api-public.sandbox.gdax.com'
@@ -44,7 +44,7 @@ pendulum.set_formatter('alternative')
 OutputFile="GdaxAcctHistory.csv"
 file_exists = os.path.isfile(OutputFile)
 
-OutputData = {"Time":"","ETH_Price": "","ETH": "", "ETH_Val": "", "BTC_Price": "", "BTC": "", "BTC_Val": "", "USD_Val": "", "Total": "","Gain": ""}
+OutputData = {"Time":"","ETH_Price": "","ETH": "", "ETH_Val": "", "BTC_Price": "", "BTC": "", "BTC_Val": "", "LTC_Price": "", "LTC": "", "LTC_Val": "", "USD_Val": "", "Total": "","Gain": ""}
 
 with open(OutputFile, 'a+') as f:
     w = csv.writer(f,delimiter=',')
@@ -53,6 +53,7 @@ with open(OutputFile, 'a+') as f:
 
 OutputData["Time"] = str(now.format('YYYY-MM-DD-HHmmss'))
 
+print("Time: " + str(now.format('YYYY-MM-DD-HHmmss')))
 #Get Prices
 myurl = api_url_base + '/products/ETH-USD/ticker'
 response = requests.get(myurl)
@@ -64,16 +65,22 @@ response = requests.get(myurl)
 BTC_PRICE = response.json()["price"]
 print("BitCoin Price --> " + BTC_PRICE)
 
+myurl = api_url_base + '/products/LTC-USD/ticker'
+response = requests.get(myurl)
+LTC_PRICE = response.json()["price"]
+print("LiteCoin Price --> " + LTC_PRICE)
+
 
 OutputData["ETH_Price"] = float(ETH_PRICE)
 OutputData["BTC_Price"] = float(BTC_PRICE)
-
+OutputData["LTC_Price"] = float(LTC_PRICE)
 
 # Account Details
 myurl = api_url_base + '/accounts'
 response = requests.get(myurl, auth=auth)
 
 TotalAcctValue=0.0
+print(response.json())
 
 for account in response.json():
     #print(account)
@@ -87,6 +94,11 @@ for account in response.json():
         OutputData["BTC"] = float(account["balance"])
         OutputData["BTC_Val"] = float(account["balance"])*float(BTC_PRICE)
         TotalAcctValue=TotalAcctValue + OutputData["BTC_Val"]
+    elif float(account["balance"]) > 0.0 and account["currency"]=="LTC":
+        print(account["currency"]+" "+account["balance"]+"  Value:"+ str(float(account["balance"])*float(LTC_PRICE)))
+        OutputData["LTC"] = float(account["balance"])
+        OutputData["LTC_Val"] = float(account["balance"])*float(LTC_PRICE)
+        TotalAcctValue=TotalAcctValue + OutputData["LTC_Val"]
     elif float(account["balance"]) > 0.0:
         print(account["currency"]+" "+account["balance"]+"  Value:"+ str(float(account["balance"])))
         OutputData["USD_Val"] = float(account["balance"])

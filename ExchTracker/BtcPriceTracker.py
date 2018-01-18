@@ -62,7 +62,7 @@ def GetTradeData(timewindow):
     #print("Getting history from " + str(StartTime) + " to " + str(Currtime))
 
     #Get Candle data
-    myurl = api_url_base + '/products/ETH-USD/candles?start=' + StartTime.isoformat() + "&end=" + EndTime.isoformat() + "&granularity=" + str(granularity)
+    myurl = api_url_base + '/products/BTC-USD/candles?start=' + StartTime.isoformat() + "&end=" + EndTime.isoformat() + "&granularity=" + str(granularity)
     #print(myurl)
     response = requests.get(myurl)
     try:
@@ -71,8 +71,8 @@ def GetTradeData(timewindow):
         print("Decoding JSON has failed")
         return none
 
-def getETHprice():
-    myurl = api_url_base + '/products/ETH-USD/ticker'
+def getBTCprice():
+    myurl = api_url_base + '/products/BTC-USD/ticker'
     response = requests.get(myurl)
     try:
         response.raise_for_status()
@@ -117,13 +117,13 @@ E_Min=0.0
 E_Mid=0.0
 
 #StoreFile name and format info
-StoreFile=".\output\EthPriceTrack.txt"
+StoreFile=".\output\BtcPriceTrack.txt"
 StoreData = {"Type":"","Time": "", "HistDepth": "", "Price": "", "EMA_12": "", "EMA_26": "", "Max": "", "Min": "", "Mid": ""}
 
 #OutputFlie name and format info
 now=pendulum.now()
 pendulum.set_formatter('alternative')
-OutFile=".\output\TrackerRun-" + now.format('YYYY-MM-DD-HHmmss') + ".csv"
+OutFile=".\output\TrackerRunBTC-" + now.format('YYYY-MM-DD-HHmmss') + ".csv"
 OutData = {"Time": "", "HistDepth": "", "Price": "", "EMA_12": "", "EMA_26": "", "Max": "", "Min": "", "Mid": ""}
 
 #plt.ion()
@@ -163,7 +163,7 @@ while True:
     #print("Depth of PriceHist: " + str(len(PriceHist)))
     #plotData(PriceHist)
 
-    ETH_PRICE = getETHprice()
+    BTC_PRICE = getBTCprice()
 
     #simple Moving Average
     SMA_12 = SMA([item['Close'] for item in deque(PriceHist,maxlen=12)],len(deque(PriceHist,maxlen=12)))
@@ -193,7 +193,7 @@ while True:
     StoreData["Type"] = "Pandas"
     StoreData["Time"] = pendulum.now()
     StoreData["HistDepth"] = len(PriceHist)
-    StoreData["Price"] = round(ETH_PRICE,3)
+    StoreData["Price"] = round(BTC_PRICE,3)
     #OutputData["Close"] = currentdata["Close"]
     StoreData["EMA_12"] = round(EMA_12,3)
     StoreData["EMA_26"] = round(EMA_26,3)
@@ -212,7 +212,7 @@ while True:
 
     OutData["Time"] = pendulum.now()
     OutData["HistDepth"] = len(PriceHist)
-    OutData["Price"] = round(ETH_PRICE,3)
+    OutData["Price"] = round(BTC_PRICE,3)
     OutData["EMA_12"] = round(EMA_12,3)
     OutData["EMA_26"] = round(EMA_26,3)
     OutData["Max"] = round(E_Max,3)

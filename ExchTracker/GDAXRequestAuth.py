@@ -39,19 +39,3 @@ if environment == "SANDBOX":
 elif environment == "PROD":
     api_url_base = 'https://api.gdax.com'
     auth = GDAXRequestAuth(api_config.api_key_prod, api_config.api_secret_prod, api_config.passphrase_prod)
-
-
-
-def buy(Acct,price):
-    Acct["USD"] = Acct["USD"] - price
-    Acct["ETH"] = Acct["ETH"] + 1.0
-
-def sell(Acct,price):
-    Acct["USD"] = Acct["USD"] + price
-    Acct["ETH"] = Acct["ETH"] - 1.0
-
-def add_amt_deque30(mylist,price):
-    mylist.append(price)
-    new_list=deque(mylist,30)
-    #print("New: " + str(list(new_list)))
-    return new_list
