@@ -30,6 +30,7 @@ class GDAXRequestAuth(AuthBase):
 
 environment="PROD"
 Invested = 3800.0
+ProdList = ["BTC","BCH","ETH","LTC","USD"]
 
 if environment == "SANDBOX":
     api_url_base = 'https://api-public.sandbox.gdax.com'
@@ -44,7 +45,13 @@ pendulum.set_formatter('alternative')
 OutputFile="GdaxAcctHistory.csv"
 file_exists = os.path.isfile(OutputFile)
 
-OutputData = {"Time":"","ETH_Price": "","ETH": "", "ETH_Val": "", "BTC_Price": "", "BTC": "", "BTC_Val": "", "LTC_Price": "", "LTC": "", "LTC_Val": "", "USD_Val": "", "Total": "","Gain": ""}
+OutputData = {"Time":"", "Total": "","Gain": ""}
+for item in ProdList:
+    OutputData[item] = ""
+    OutputData[item+"_Val"] = 0.0
+    OutputData[item+"_Price"] = 0.0
+
+print(OutputData)
 
 with open(OutputFile, 'a+') as f:
     w = csv.writer(f,delimiter=',')
@@ -55,54 +62,31 @@ OutputData["Time"] = str(now.format('YYYY-MM-DD-HHmmss'))
 
 print("Time: " + str(now.format('YYYY-MM-DD-HHmmss')))
 #Get Prices
-myurl = api_url_base + '/products/ETH-USD/ticker'
-response = requests.get(myurl)
-ETH_PRICE = response.json()["price"]
-print("Ether Price --> " + ETH_PRICE)
+for item in ProdList:
+    if item == "USD":
+            continue
+    myurl = api_url_base + '/products/'+ item +'-USD/ticker'
+    response = requests.get(myurl)
+    OutputData[item+"_Price"] = float(response.json()["price"])
+    #print(item + " Price is: " + str(OutputData[item+"_Price"]))
 
-myurl = api_url_base + '/products/BTC-USD/ticker'
-response = requests.get(myurl)
-BTC_PRICE = response.json()["price"]
-print("BitCoin Price --> " + BTC_PRICE)
-
-myurl = api_url_base + '/products/LTC-USD/ticker'
-response = requests.get(myurl)
-LTC_PRICE = response.json()["price"]
-print("LiteCoin Price --> " + LTC_PRICE)
-
-
-OutputData["ETH_Price"] = float(ETH_PRICE)
-OutputData["BTC_Price"] = float(BTC_PRICE)
-OutputData["LTC_Price"] = float(LTC_PRICE)
+OutputData["USD_Price"]=1.0
 
 # Account Details
 myurl = api_url_base + '/accounts'
 response = requests.get(myurl, auth=auth)
 
 TotalAcctValue=0.0
-print(response.json())
+#print(response.json())
+#print("text \n" + response.text)
 
 for account in response.json():
-    #print(account)
-    if float(account["balance"]) > 0.0 and account["currency"]=="ETH":
-        OutputData["ETH"] = float(account["balance"])
-        OutputData["ETH_Val"] = float(account["balance"]) * float(ETH_PRICE)
-        TotalAcctValue=TotalAcctValue + OutputData["ETH_Val"]
-        print(account["currency"]+" " + str(OutputData["ETH"]) + "  Value:"+ str(OutputData["ETH_Val"]))
-    elif float(account["balance"]) > 0.0 and account["currency"]=="BTC":
-        print(account["currency"]+" "+account["balance"]+"  Value:"+ str(float(account["balance"])*float(BTC_PRICE)))
-        OutputData["BTC"] = float(account["balance"])
-        OutputData["BTC_Val"] = float(account["balance"])*float(BTC_PRICE)
-        TotalAcctValue=TotalAcctValue + OutputData["BTC_Val"]
-    elif float(account["balance"]) > 0.0 and account["currency"]=="LTC":
-        print(account["currency"]+" "+account["balance"]+"  Value:"+ str(float(account["balance"])*float(LTC_PRICE)))
-        OutputData["LTC"] = float(account["balance"])
-        OutputData["LTC_Val"] = float(account["balance"])*float(LTC_PRICE)
-        TotalAcctValue=TotalAcctValue + OutputData["LTC_Val"]
-    elif float(account["balance"]) > 0.0:
-        print(account["currency"]+" "+account["balance"]+"  Value:"+ str(float(account["balance"])))
-        OutputData["USD_Val"] = float(account["balance"])
-        TotalAcctValue=TotalAcctValue + OutputData["USD_Val"]
+    for item in ProdList:
+        if float(account["balance"]) > 0.0 and account["currency"]==item:
+            OutputData[item] = float(account["balance"])
+            OutputData[item+"_Val"] = float(account["balance"]) * OutputData[item+"_Price"]
+            TotalAcctValue=TotalAcctValue + OutputData[item+"_Val"]
+            print(account["currency"] + " Price: " + str(OutputData[item+"_Price"]) + "  Amount: " + str(OutputData[item]) + "  Value: " + str(OutputData[item+"_Val"]) )
 
 OutputData["Total"] = TotalAcctValue
 OutputData["Gain"] = float(TotalAcctValue) - Invested
